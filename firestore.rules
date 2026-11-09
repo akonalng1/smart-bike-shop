@@ -1,0 +1,153 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function ownsDoc() { return signedIn() && resource.data.userId == request.auth.uid; }
+    // Admin = a verified user whose profile document has role "admin".
+    // Customers cannot change their own role (see /users rules), so only you can promote someone, in the Firebase console.
+    function isAdmin() {
+      return verified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'fullName', 'email', 'role', 'createdAt', 'emailVerified'])
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'customer'
+        && request.resource.data.email.lower() == request.auth.token.email.lower()
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 2
+        && request.resource.data.fullName.size() <= 80
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.emailVerified == (request.auth.token.email_verified == true);
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'emailVerified'])
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 2
+        && request.resource.data.fullName.size() <= 80
+        && (request.resource.data.emailVerified == resource.data.emailVerified
+            || request.resource.data.emailVerified == (request.auth.token.email_verified == true));
+      allow delete: if false;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.categoryId == categoryId
+        && request.resource.data.categoryName is string
+        && request.resource.data.categoryName.size() >= 2
+        && request.resource.data.categoryName.size() <= 60
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 300;
+      allow delete: if isAdmin();
+    }
+
+    match /products/{productId} {
+      function validProduct() {
+        let d = request.resource.data;
+        return d.productId == productId
+          && d.productName is string && d.productName.size() >= 2 && d.productName.size() <= 120
+          && d.description is string && d.description.size() <= 2000
+          && d.price is number && d.price >= 0 && d.price <= 1000000
+          && d.stock is int && d.stock >= 0
+          && d.category is string
+          && d.imageUrl is string && d.imageUrl.size() <= 600000
+          && d.status in ['Active', 'Inactive'];
+      }
+      // Checkout may only LOWER the stock of an active product, by at most 99 per write.
+      function buyerStockDecrement() {
+        return verified()
+          && resource.data.status == 'Active'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock'])
+          && request.resource.data.stock is int
+          && request.resource.data.stock >= 0
+          && request.resource.data.stock < resource.data.stock
+          && resource.data.stock - request.resource.data.stock <= 99;
+      }
+      allow read: if resource.data.status == 'Active' || isAdmin();
+      allow create: if isAdmin() && validProduct();
+      allow update: if buyerStockDecrement() || (isAdmin() && validProduct());
+      allow delete: if isAdmin();
+    }
+
+    match /carts/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['cartId', 'userId', 'items', 'updatedAt'])
+        && request.resource.data.cartId == uid
+        && request.resource.data.userId == uid
+        && request.resource.data.items is list
+        && request.resource.data.items.size() <= 50;
+    }
+
+    match /orders/{orderId} {
+      function validNewOrder() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['orderId', 'userId', 'customerName', 'customerEmail', 'products', 'deliveryAddress', 'paymentMethod', 'paymentStatus', 'orderStatus', 'totalAmount', 'paymentId', 'statusHistory', 'createdAt', 'cancelRequested'])
+          && d.orderId == orderId
+          && d.userId == request.auth.uid
+          && d.customerEmail.lower() == request.auth.token.email.lower()
+          && d.orderStatus == 'Pending'
+          && ((d.paymentMethod == 'COD' && d.paymentStatus == 'Pending')
+              || (d.paymentMethod == 'GCash' && d.paymentStatus == 'Pending Verification'))
+          && d.products is list && d.products.size() >= 1 && d.products.size() <= 50
+          && d.totalAmount is number && d.totalAmount > 0 && d.totalAmount <= 10000000
+          && d.deliveryAddress is map
+          && d.cancelRequested == false
+          && d.createdAt == request.time;
+      }
+      // Customers can only ASK to cancel. The admin cancels, which also returns the stock.
+      function cancelRequest() {
+        return ownsDoc()
+          && resource.data.orderStatus == 'Pending'
+          && resource.data.paymentStatus != 'Paid'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cancelRequested'])
+          && request.resource.data.cancelRequested == true;
+      }
+      allow read: if ownsDoc() || isAdmin();
+      allow create: if verified() && validNewOrder();
+      allow update: if cancelRequest() || isAdmin();
+      allow delete: if false;
+    }
+
+    match /payments/{paymentId} {
+      allow read: if ownsDoc() || isAdmin();
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['paymentId', 'orderId', 'userId', 'paymentMethod', 'referenceNumber', 'amount', 'paymentStatus', 'createdAt'])
+        && request.resource.data.paymentId == paymentId
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.paymentMethod in ['GCash', 'COD']
+        && request.resource.data.paymentStatus in ['Pending', 'Pending Verification']
+        && request.resource.data.amount is number && request.resource.data.amount > 0
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // One document per GCash reference number. Creating a second one with the same ID is refused, which blocks reused references.
+    match /gcashRefs/{refNo} {
+      allow read: if isAdmin();
+      allow create: if verified()
+        && refNo.matches('[A-Z0-9]{8,20}')
+        && request.resource.data.keys().hasOnly(['userId', 'orderId', 'createdAt'])
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read, delete: if ownsDoc();
+      allow create: if ((verified() && request.resource.data.userId == request.auth.uid) || isAdmin())
+        && request.resource.data.keys().hasOnly(['notificationId', 'userId', 'title', 'message', 'isRead', 'createdAt'])
+        && request.resource.data.isRead == false
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.message.size() <= 400;
+      allow update: if ownsDoc()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
+        && request.resource.data.isRead is bool;
+    }
+  }
+}

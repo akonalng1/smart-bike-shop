@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop - Smart Bike Shop</title><meta name="description" content="Smart Bike Shop: bicycle parts and accessories delivered across the Philippines.">
+<link rel="icon" href="data:,"><link rel="stylesheet" href="css/style.css"></head>
+<body data-page="shop"><div id="nav"></div>
+<main class="wrap section"><h1>Bike parts</h1>
+<form class="toolbar" id="filters" onsubmit="return false"><input id="f-q" type="search" placeholder="Search parts" aria-label="Search parts">
+<select id="f-cat" aria-label="Category"></select>
+<select id="f-sort" aria-label="Sort"><option value="name">Name A to Z</option><option value="low">Price, low to high</option><option value="high">Price, high to low</option></select></form>
+<p class="muted" id="count" aria-live="polite"></p><div class="grid" id="grid"><p class="muted">Loading parts…</p></div></main>
+
+<div id="foot"></div>
+<script type="module" src="js/products.js"></script>
+</body></html>

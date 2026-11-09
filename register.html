@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Create account - Smart Bike Shop</title><meta name="description" content="Smart Bike Shop: bicycle parts and accessories delivered across the Philippines.">
+<link rel="icon" href="data:,"><link rel="stylesheet" href="css/style.css"></head>
+<body data-page="register"><div id="nav"></div>
+<main class="auth"><div class="auth-side"><h1>Join the ride.</h1><p>Create an account with your Gmail address. We will email a link to verify it before you can order.</p></div>
+<div class="auth-form"><form id="register" novalidate><h2>Create account</h2><div id="msg" role="alert"></div>
+<div class="field"><label for="fullName">Full name</label><input id="fullName" name="fullName" autocomplete="name" required></div>
+<div class="field"><label for="email">Gmail address</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="name@gmail.com"></div>
+<div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="new-password" required><p class="hint">At least 8 characters with a letter and a number.</p></div>
+<div class="field"><label for="confirm">Confirm password</label><input id="confirm" name="confirm" type="password" autocomplete="new-password" required></div>
+<button class="btn btn-primary" style="width:100%" id="go">Create account</button><p class="muted">Already registered? <a href="login.html">Sign in</a></p></form></div></main>
+
+<div id="foot"></div>
+<script type="module" src="js/auth.js"></script>
+</body></html>

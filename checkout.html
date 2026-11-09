@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout - Smart Bike Shop</title><meta name="description" content="Smart Bike Shop: bicycle parts and accessories delivered across the Philippines.">
+<link rel="icon" href="data:,"><link rel="stylesheet" href="css/style.css"></head>
+<body data-page="checkout"><div id="nav"></div>
+<main class="wrap section"><h1>Checkout</h1><div id="empty" class="empty" hidden><p>Your cart is empty.</p><a class="btn btn-primary" href="products.html">Browse parts</a></div>
+<div id="done" class="panel" hidden></div>
+<form id="checkout" class="two" novalidate hidden><div>
+<fieldset class="panel"><legend>Delivery details</legend><div id="msg" role="alert"></div>
+<div class="row2"><div class="field"><label for="recipientName">Recipient name</label><input id="recipientName" required autocomplete="name"></div>
+<div class="field"><label for="phone">Mobile number</label><input id="phone" required inputmode="tel" autocomplete="tel" placeholder="09XXXXXXXXX"></div></div>
+<div class="field"><label for="street">House number and street</label><input id="street" required autocomplete="address-line1"></div>
+<div class="row2"><div class="field"><label for="barangay">Barangay</label><input id="barangay" required></div><div class="field"><label for="city">City or municipality</label><input id="city" required autocomplete="address-level2"></div></div>
+<div class="row2"><div class="field"><label for="province">Province</label><input id="province" required autocomplete="address-level1"></div><div class="field"><label for="postalCode">Postal code</label><input id="postalCode" required inputmode="numeric" maxlength="4" autocomplete="postal-code"></div></div>
+<div class="field"><label for="notes">Delivery notes (optional)</label><textarea id="notes" maxlength="200"></textarea></div></fieldset>
+<fieldset class="panel"><legend>Payment method</legend>
+<div class="pay-opt"><input type="radio" name="pay" id="pay-gcash" value="GCash" checked><label for="pay-gcash"><b>GCash</b><br><span class="muted">Send the exact total, then enter the reference number.</span></label></div>
+<div class="pay-opt"><input type="radio" name="pay" id="pay-cod" value="COD"><label for="pay-cod"><b>Cash on Delivery</b><br><span class="muted">Pay in cash when your order arrives. Payment status starts as Pending.</span></label></div>
+<div class="gcash" id="gcash-box"><p><b>How to pay with GCash</b></p><ol><li>Open GCash and choose Send Money.</li><li>Send the exact total to <b id="g-num"></b> (<span id="g-name"></span>).</li><li>Copy the reference number from your receipt and enter it below.</li></ol>
+<div class="field"><label for="referenceNumber">GCash reference number</label><input id="referenceNumber" maxlength="20" autocomplete="off"><p class="hint">We confirm your payment before preparing your order.</p></div></div></fieldset></div>
+<aside class="panel summary"><h2>Your order</h2><div id="lines"></div><div class="tot big"><span>Total</span><span id="total"></span></div><button class="btn btn-primary" style="width:100%;margin-top:14px" id="place">Confirm order</button></aside></form></main>
+
+<div id="foot"></div>
+<script type="module" src="js/checkout.js"></script>
+</body></html>
